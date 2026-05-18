@@ -1,0 +1,18 @@
+{
+  "name": "futbol-akademi-supabase",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Futbol akademisi yönetim sistemi (Next.js + Expo + Supabase/PostgreSQL) - Türkçe arayüz",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev -w @fa/web",
+    "dev:mobile": "npm run start -w @fa/mobile",
+    "build:web": "npm run build -w @fa/web",
+    "lint": "npm run lint -ws",
+    "typecheck": "npm run typecheck -ws"
+  }
+}
+

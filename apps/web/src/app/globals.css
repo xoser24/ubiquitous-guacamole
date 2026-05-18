@@ -1,0 +1,99 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #0b0e14;
+  --panel: #121827;
+  --panel-2: #0f172a;
+  --gold: #d4af37;
+  --accent-a: #22d3ee; /* cyan */
+  --accent-b: #a78bfa; /* violet */
+  --text: #e5e7eb;
+  --muted: #9ca3af;
+  --danger: #ef4444;
+  --success: #22c55e;
+  --border: rgba(255, 255, 255, 0.10);
+  --border-strong: rgba(255, 255, 255, 0.16);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-geist-sans), system-ui, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+.card {
+  @apply rounded-2xl border border-white/10 bg-[color:var(--panel)]/80 shadow-[0_10px_30px_rgba(0,0,0,.35)];
+}
+.card-hover {
+  @apply transition will-change-transform hover:-translate-y-0.5 hover:border-white/20 hover:shadow-[0_16px_40px_rgba(0,0,0,.45)];
+}
+
+/* Neon kart görünümü (dashboard standardı) */
+.card-neon {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--panel) 92%, transparent),
+    color-mix(in srgb, #06080f 45%, transparent)
+  );
+  border-color: color-mix(in srgb, var(--accent-a) 18%, rgba(255, 255, 255, 0.12));
+  box-shadow:
+    0 18px 55px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(167, 139, 250, 0.10) inset;
+}
+.card-neon-hover {
+  @apply transition will-change-transform;
+}
+.card-neon-hover:hover {
+  transform: translateY(-2px) scale(1.01);
+  border-color: color-mix(in srgb, var(--accent-a) 38%, rgba(255, 255, 255, 0.18));
+  box-shadow:
+    0 22px 70px rgba(0, 0, 0, 0.60),
+    0 0 0 1px rgba(34, 211, 238, 0.22) inset,
+    0 0 26px rgba(34, 211, 238, 0.12);
+}
+.neon-dot {
+  background: radial-gradient(circle at 30% 30%, rgba(34, 211, 238, 0.35), transparent 60%),
+    radial-gradient(circle at 70% 70%, rgba(167, 139, 250, 0.25), transparent 55%);
+  filter: blur(28px);
+}
+.neon-icon {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.03));
+  border-color: color-mix(in srgb, var(--accent-a) 20%, rgba(255, 255, 255, 0.10));
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.12) inset;
+}
+.glass {
+  @apply border border-white/10 bg-white/[0.04] backdrop-blur-xl;
+}
+.chip {
+  @apply inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] text-[color:var(--muted)] sm:px-3 sm:text-xs;
+}
+.icon-btn {
+  @apply inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition size-10;
+}
+.nav-item {
+  @apply flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm border transition;
+}
+.nav-item-active {
+  @apply bg-[color:var(--gold)] text-black border-[color:var(--gold)];
+}
+.nav-item-idle {
+  @apply bg-white/0 border-transparent text-[color:var(--text)]/90 hover:bg-white/5 hover:border-white/10;
+}
+.input {
+  @apply w-full rounded-xl bg-black/20 border border-white/10 px-3 py-2 text-sm outline-none focus:border-[color:var(--gold)]/70 sm:text-base;
+}
+.btn-primary {
+  @apply inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm font-medium transition bg-[color:var(--gold)] text-black hover:brightness-110 sm:px-4 sm:text-base;
+}
+.btn-ghost {
+  @apply inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm font-medium transition bg-white/5 hover:bg-white/10 border border-white/10 sm:px-4 sm:text-base;
+}
+
+/* Seçim / scrollbar ufak cilalar */
+::selection {
+  background: color-mix(in srgb, var(--gold) 35%, transparent);
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
