@@ -24,11 +24,22 @@ export async function POST(req: Request) {
     if (body.aylik_aidat_tutar !== undefined) patch.aylik_aidat_tutar = body.aylik_aidat_tutar;
 
     const { error } = await admin.from("students").update(patch).eq("id", body.studentId);
-    if (error) return NextResponse.json({ hata: error.message ?? "Güncellenemedi." }, { status: 400 });
+    if (error) {
+      const msg = error.message ?? "Güncellenemedi.";
+      if (/aidat_vade_gunu|aylik_aidat_tutar/i.test(msg)) {
+        return NextResponse.json(
+          {
+            hata:
+              "Veritabanında aidat ayar kolonları yok. Önce Supabase SQL'de migration çalıştırılmalı (aidat_vade_gunu, aylik_aidat_tutar)."
+          },
+          { status: 400 }
+        );
+      }
+      return NextResponse.json({ hata: msg }, { status: 400 });
+    }
 
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (e) {
     return jsonError(e);
   }
 }
-
