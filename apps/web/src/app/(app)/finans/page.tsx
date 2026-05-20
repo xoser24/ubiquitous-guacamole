@@ -52,13 +52,13 @@ export default async function FinansPage() {
   const net = gelir - gider;
 
   const cards = [
-    { href: "/finans/defter", title: "💰 Gelir / Gider", desc: "Aylık özet, grafikler ve defter kayıtları" },
-    { href: "/finans/aidat", title: "📋 Aidat Takibi", desc: "Tüm öğrenciler, borç durumu, hızlı tahsilat" },
+    { href: "/finans/aidat", title: "📋 Aidat Takibi", desc: "Öğrenci bazlı takip + gün hesabı" },
+    { href: "/finans/defter", title: "💰 Gelir / Gider", desc: "Defter kayıtları + öğrenci bazlı filtre" },
     { href: "/finans/gecikmis", title: "🔴 Gecikmiş Ödemeler", desc: "Şiddet seviyeli gecikme listesi + hızlı aksiyon" },
+    { href: "/finans/yaklasan", title: "📅 Yaklaşan Ödemeler", desc: "Önümüzdeki günler için proaktif takip" },
     { href: "/finans/hatirlatmalar", title: "📲 Tahsilat Hatırlatmaları", desc: "WhatsApp akışları, toplu gönderim, geçmiş" },
     { href: "/finans/raporlar", title: "📈 Finansal Raporlar", desc: "Tahsilat oranı, trendler, dışa aktarım" },
     { href: "/finans/risk", title: "👨‍👩‍👦 Veli Risk Analizi", desc: "Düzenli/Riskli/Kritik sınıflandırma" },
-    { href: "/finans/yaklasan", title: "📅 Yaklaşan Ödemeler", desc: "Önümüzdeki günler için proaktif takip" },
     { href: "/finans/takim-analiz", title: "⚽ Takım / Yaş Grubu Analizi", desc: "U10/U12 vb gelir ve gecikme oranları" }
   ];
 
@@ -85,12 +85,12 @@ export default async function FinansPage() {
         </div>
       </div>
 
-      <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
         {cards.map((c) => (
           <Link key={c.href} href={c.href} className="block">
-            <div className="card card-neon card-neon-hover p-6 h-full">
-              <div className="text-xl font-semibold">{c.title}</div>
-              <div className="text-sm text-[color:var(--muted)] mt-2">{c.desc}</div>
+            <div className="card card-neon card-neon-hover p-4 h-full">
+              <div className="text-base font-semibold leading-snug">{c.title}</div>
+              <div className="text-xs text-[color:var(--muted)] mt-1 leading-relaxed">{c.desc}</div>
             </div>
           </Link>
         ))}
