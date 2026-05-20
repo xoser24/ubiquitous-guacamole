@@ -7,13 +7,15 @@ export function FinanceWhatsAppActionsClient({
   defaultText,
   dedupeKey,
   related,
-  buttonLabel
+  buttonLabel,
+  buttonClassName
 }: {
   studentId: string;
   defaultText: string;
   dedupeKey: string;
   related?: Record<string, any>;
   buttonLabel?: string;
+  buttonClassName?: string;
 }) {
   const [loading, setLoading] = useState(false);
   const [hata, setHata] = useState<string | null>(null);
@@ -41,7 +43,7 @@ export function FinanceWhatsAppActionsClient({
 
   return (
     <div className="flex items-center gap-2">
-      <button className="btn-primary" type="button" onClick={gonder} disabled={loading}>
+      <button className={buttonClassName ?? "btn-primary"} type="button" onClick={gonder} disabled={loading}>
         {buttonLabel ?? "WhatsApp Gönder"}
       </button>
       {bilgi && <span className="text-xs text-[color:var(--success)]">{bilgi}</span>}

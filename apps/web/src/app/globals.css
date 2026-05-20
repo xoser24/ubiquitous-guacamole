@@ -89,6 +89,14 @@ body {
   @apply inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm font-medium transition bg-white/5 hover:bg-white/10 border border-white/10 sm:px-4 sm:text-base;
 }
 
+/* Kompakt (tablo aksiyonları vb.) */
+.btn-mini {
+  @apply inline-flex items-center justify-center rounded-lg px-2.5 py-1.5 text-xs font-medium transition bg-white/5 hover:bg-white/10 border border-white/10 whitespace-nowrap;
+}
+.btn-mini-primary {
+  @apply inline-flex items-center justify-center rounded-lg px-2.5 py-1.5 text-xs font-semibold transition bg-[color:var(--gold)] text-black hover:brightness-110 whitespace-nowrap;
+}
+
 /* Seçim / scrollbar ufak cilalar */
 ::selection {
   background: color-mix(in srgb, var(--gold) 35%, transparent);

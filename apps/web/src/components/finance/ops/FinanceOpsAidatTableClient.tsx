@@ -262,12 +262,12 @@ export function FinanceOpsAidatTableClient({
                     <td className="py-3 px-4 text-right tabular-nums">{r.gecikmeGun > 0 ? r.gecikmeGun : "0"}</td>
                     <td className="py-3 px-4">{r.sonOdeme ?? "—"}</td>
                     <td className="py-3 px-4">
-                      <div className="flex flex-wrap gap-2">
-                        <button className="btn-ghost" type="button" onClick={() => openDetail(r.student.id)}>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button className="btn-mini" type="button" onClick={() => openDetail(r.student.id)}>
                           Detay
                         </button>
                         <button
-                          className="btn-ghost"
+                          className="btn-mini"
                           type="button"
                           onClick={() => {
                             setPayModalStudent(r.student);
@@ -284,7 +284,7 @@ export function FinanceOpsAidatTableClient({
                           Ödeme Gir
                         </button>
                         <button
-                          className="btn-ghost"
+                          className="btn-mini"
                           type="button"
                           onClick={() => {
                             setReceiptStudentId(r.student.id);
@@ -297,7 +297,8 @@ export function FinanceOpsAidatTableClient({
                           studentId={r.student.id}
                           dedupeKey={`finance:aidat:${r.student.id}:${monthKey}`}
                           related={{ student_id: r.student.id, tur: "aidat_takip", donem: monthKey }}
-                          buttonLabel="WhatsApp Hatırlatma"
+                          buttonLabel="WhatsApp"
+                          buttonClassName="btn-mini-primary"
                           defaultText={`💳 Aidat Hatırlatma\n\n${r.student.ad_soyad} (${r.student.yas_grubu})\nDönem: ${monthKey}\nDurum: ${badge.label}\nKalan: ${r.kalan == null ? "—" : `${fmtMoney(r.kalan)} ₺`}\nVade: ${r.vade ?? "—"}\n\nÖdeme/detay için dönüş yapabilir misiniz?`}
                         />
                       </div>
@@ -361,12 +362,12 @@ export function FinanceOpsAidatTableClient({
                   Vade: {r.vade ?? "—"} • Gecikme: {r.gecikmeGun} gün • Son ödeme: {r.sonOdeme ?? "—"}
                 </div>
 
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button className="btn-ghost" type="button" onClick={() => openDetail(r.student.id)}>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <button className="btn-mini" type="button" onClick={() => openDetail(r.student.id)}>
                     Detay
                   </button>
                   <button
-                    className="btn-ghost"
+                    className="btn-mini"
                     type="button"
                     onClick={() => {
                       setPayModalStudent(r.student);
@@ -383,7 +384,7 @@ export function FinanceOpsAidatTableClient({
                     Ödeme Gir
                   </button>
                   <button
-                    className="btn-ghost"
+                    className="btn-mini"
                     type="button"
                     onClick={() => {
                       setReceiptStudentId(r.student.id);
@@ -392,16 +393,16 @@ export function FinanceOpsAidatTableClient({
                   >
                     Dekont Görüntüle
                   </button>
-                </div>
-
-                <div className="mt-2">
-                  <FinanceWhatsAppActionsClient
-                    studentId={r.student.id}
-                    dedupeKey={`finance:aidat:${r.student.id}:${monthKey}`}
-                    related={{ student_id: r.student.id, tur: "aidat_takip", donem: monthKey }}
-                    buttonLabel="WhatsApp Hatırlatma"
-                    defaultText={`💳 Aidat Hatırlatma\n\n${r.student.ad_soyad} (${r.student.yas_grubu})\nDönem: ${monthKey}\nDurum: ${badge.label}\nKalan: ${r.kalan == null ? "—" : `${fmtMoney(r.kalan)} ₺`}\nVade: ${r.vade ?? "—"}\n\nÖdeme/detay için dönüş yapabilir misiniz?`}
-                  />
+                  <div className="flex">
+                    <FinanceWhatsAppActionsClient
+                      studentId={r.student.id}
+                      dedupeKey={`finance:aidat:${r.student.id}:${monthKey}`}
+                      related={{ student_id: r.student.id, tur: "aidat_takip", donem: monthKey }}
+                      buttonLabel="WhatsApp"
+                      buttonClassName="btn-mini-primary w-full"
+                      defaultText={`💳 Aidat Hatırlatma\n\n${r.student.ad_soyad} (${r.student.yas_grubu})\nDönem: ${monthKey}\nDurum: ${badge.label}\nKalan: ${r.kalan == null ? "—" : `${fmtMoney(r.kalan)} ₺`}\nVade: ${r.vade ?? "—"}\n\nÖdeme/detay için dönüş yapabilir misiniz?`}
+                    />
+                  </div>
                 </div>
               </motion.div>
             );

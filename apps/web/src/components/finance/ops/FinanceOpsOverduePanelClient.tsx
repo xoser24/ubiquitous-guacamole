@@ -188,6 +188,7 @@ export function FinanceOpsOverduePanelClient({
                     dedupeKey={`finance:overdue:${x.student_id}:${today}`}
                     related={{ student_id: x.student_id, tur: "gecikmis", payment_id: x.id }}
                     buttonLabel="WhatsApp Hatırlatma"
+                    buttonClassName="btn-mini-primary"
                     defaultText={`🔴 Gecikmiş Ödeme Hatırlatma\n\n${x.student?.ad_soyad ?? "Öğrenci"} için ${x.donem} dönemi (${x.gelir_kategorisi}) ödemesi gecikmiştir.\nKalan: ${fmtMoney(x.kalan)} ₺\nVade: ${x.son_odeme_tarihi} (${x.gecikme} gün gecikme)\n\nÖdeme/detay için dönüş yapabilir misiniz?`}
                   />
                 </div>
