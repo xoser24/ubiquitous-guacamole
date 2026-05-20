@@ -16,6 +16,8 @@ import {
 } from "chart.js";
 import { duzenleBorcKaydi, duzenleDefterKaydi, iptalBorcKaydi, iptalDefterKaydi } from "@/components/finance/FinanceEditActions";
 import { StudentFinanceModalClient } from "@/components/finance/StudentFinanceModalClient";
+import { FinanceOpsLedgerModalClient } from "@/components/finance/ops/FinanceOpsLedgerModalClient";
+import { FinanceStudentPaymentCreateModalClient } from "@/components/finance/ops/FinanceStudentPaymentCreateModalClient";
 
 ChartJS.register(
   CategoryScale,
@@ -49,22 +51,11 @@ export function FinanceClient({
   const [modalStudent, setModalStudent] = useState<any | null>(null);
   const [modalPayments, setModalPayments] = useState<any[]>([]);
   const [modalTx, setModalTx] = useState<any[]>([]);
-  const [txTur, setTxTur] = useState<"gelir" | "gider">("gelir");
-  const [kategori, setKategori] = useState("Aylık Aidat");
-  const [tutar, setTutar] = useState<number>(0);
-  const [tarih, setTarih] = useState(dayjs().format("YYYY-MM-DD"));
-  const [aciklama, setAciklama] = useState("");
+  const [ledgerOpen, setLedgerOpen] = useState<null | "gelir" | "gider">(null);
+  const [spOpen, setSpOpen] = useState(false);
 
-  const [txStudentId, setTxStudentId] = useState<string>("");
-  const [ogrenciId, setOgrenciId] = useState(students[0]?.id ?? "");
-  const [gelirKategorisi, setGelirKategorisi] = useState("Aylık Aidat");
-  const [tutarToplam, setTutarToplam] = useState<number>(0);
-  const [tutarOdenen, setTutarOdenen] = useState<number>(0);
-  const [sonOdeme, setSonOdeme] = useState(dayjs().format("YYYY-MM-DD"));
-
-
-  const [transactions, setTransactions] = useState<any[]>(initialTransactions ?? []);
-  const [payments, setPayments] = useState<any[]>(initialStudentPayments ?? []);
+  const transactions = initialTransactions ?? [];
+  const payments = initialStudentPayments ?? [];
   const [bilgi, setBilgi] = useState<string | null>(null);
   const [hata, setHata] = useState<string | null>(null);
 
@@ -146,13 +137,6 @@ export function FinanceClient({
     };
   }, [filteredTransactions, donem]);
 
-  function durumHesapla(toplam: number, odenen: number, son: string) {
-    if (odenen >= toplam) return "ödendi";
-    if (odenen > 0 && odenen < toplam) return "kısmi";
-    if (dayjs(son).isBefore(dayjs(), "day")) return "gecikmiş";
-    return "ödenmedi";
-  }
-
   async function yenile() {
     // Yenileme işlemi: sayfa reload yerine basit bir refresh (server'dan yeni initial data gelmesi için)
     // Not: MVP - kullanıcı akışını bozmadan hızlı çözüm
@@ -181,62 +165,6 @@ export function FinanceClient({
       setModalOpen(false);
     } finally {
       setModalLoading(false);
-    }
-  }
-
-  async function txEkle(e: React.FormEvent) {
-    e.preventDefault();
-    setBilgi(null);
-    setHata(null);
-    try {
-      const r = await fetch("/api/finance/ledger/create", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          tur: txTur,
-          kategori,
-          tutar,
-          tarih,
-          aciklama: aciklama || null,
-          student_id: txStudentId || null
-        })
-      });
-      const j = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(j?.hata ?? "Kayıt eklenemedi.");
-      setBilgi("Kayıt eklendi.");
-      setTutar(0);
-      setAciklama("");
-      await yenile();
-    } catch (e: any) {
-      setHata(e?.message ?? "Kayıt eklenemedi.");
-    }
-  }
-
-  async function odemeEkle(e: React.FormEvent) {
-    e.preventDefault();
-    setBilgi(null);
-    setHata(null);
-    try {
-      const r = await fetch("/api/finance/student-payments/create", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          student_id: ogrenciId,
-          donem,
-          gelir_kategorisi: gelirKategorisi,
-          tutar_toplam: tutarToplam,
-          tutar_odenen: tutarOdenen,
-          son_odeme_tarihi: sonOdeme
-        })
-      });
-      const j = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(j?.hata ?? "Ödeme kaydı eklenemedi.");
-      setBilgi("Ödeme kaydı eklendi.");
-      setTutarToplam(0);
-      setTutarOdenen(0);
-      await yenile();
-    } catch (e: any) {
-      setHata(e?.message ?? "Ödeme kaydı eklenemedi.");
     }
   }
 
@@ -269,7 +197,29 @@ export function FinanceClient({
         transactions={modalTx}
       />
 
-      <div className="grid md:grid-cols-3 gap-3">
+      <FinanceOpsLedgerModalClient
+        open={ledgerOpen === "gelir"}
+        onClose={() => setLedgerOpen(null)}
+        initialTur="gelir"
+        students={students}
+        defaultStudentId={filterStudentId || null}
+      />
+      <FinanceOpsLedgerModalClient
+        open={ledgerOpen === "gider"}
+        onClose={() => setLedgerOpen(null)}
+        initialTur="gider"
+        students={students}
+        defaultStudentId={filterStudentId || null}
+      />
+      <FinanceStudentPaymentCreateModalClient
+        open={spOpen}
+        onClose={() => setSpOpen(false)}
+        students={students}
+        defaultStudentId={filterStudentId || null}
+        defaultDonem={donem}
+      />
+
+      <div className="grid md:grid-cols-4 gap-3">
         <motion.div
           className="card card-neon p-4"
           initial={reduceMotion ? undefined : { opacity: 0, y: 8 }}
@@ -277,7 +227,7 @@ export function FinanceClient({
           transition={{ duration: 0.25, ease: "easeOut" }}
         >
           <div className="text-sm text-[color:var(--muted)]">Dönem</div>
-          <input className="input mt-1" value={donem} onChange={(e) => setDonem(e.target.value)} />
+          <input className="input mt-1" type="month" value={donem} onChange={(e) => setDonem(e.target.value)} />
         </motion.div>
 
         <motion.div
@@ -329,6 +279,26 @@ export function FinanceClient({
           >
             {ozet.net.toLocaleString("tr-TR")} ₺
           </motion.div>
+        </motion.div>
+
+        <motion.div
+          className="card card-neon p-4"
+          initial={reduceMotion ? undefined : { opacity: 0, y: 8 }}
+          animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+          transition={{ duration: 0.25, delay: 0.13, ease: "easeOut" }}
+        >
+          <div className="text-sm text-[color:var(--muted)]">Hızlı İşlemler</div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button className="btn-primary" type="button" onClick={() => setLedgerOpen("gelir")}>
+              + Gelir
+            </button>
+            <button className="btn-primary" type="button" onClick={() => setLedgerOpen("gider")}>
+              + Gider
+            </button>
+            <button className="btn-ghost" type="button" onClick={() => setSpOpen(true)}>
+              + Ödeme
+            </button>
+          </div>
         </motion.div>
       </div>
 
@@ -449,91 +419,42 @@ export function FinanceClient({
       </div>
 
       <div className="grid lg:grid-cols-2 gap-4">
-        <form className="card card-neon p-6 space-y-3" onSubmit={txEkle}>
-          <div className="font-semibold">Defter Kaydı (Gelir/Gider)</div>
-          <div className="grid md:grid-cols-2 gap-3">
-            <div className="md:col-span-2">
-              <label className="text-sm text-[color:var(--muted)]">İşlem Öğrencisi (opsiyonel)</label>
-              <select
-                className="input mt-1"
-                value={txStudentId}
-                onChange={(e) => setTxStudentId(e.target.value)}
-              >
-                <option value="">Genel (öğrenci yok)</option>
-                {students.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.ad_soyad}
-                  </option>
-                ))}
-              </select>
-            </div>
+        <div className="card card-neon p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <label className="text-sm text-[color:var(--muted)]">Tür</label>
-              <select className="input mt-1" value={txTur} onChange={(e) => setTxTur(e.target.value as any)}>
-                <option value="gelir">Gelir</option>
-                <option value="gider">Gider</option>
-              </select>
+              <div className="font-semibold">Gelir / Gider İşlemleri</div>
+              <div className="text-sm text-[color:var(--muted)] mt-1">Formları kaldırdım — işlemler modal olarak açılır.</div>
             </div>
-            <div>
-              <label className="text-sm text-[color:var(--muted)]">Kategori</label>
-              <input className="input mt-1" value={kategori} onChange={(e) => setKategori(e.target.value)} />
-            </div>
-            <div>
-              <label className="text-sm text-[color:var(--muted)]">Tutar</label>
-              <input className="input mt-1" type="number" value={tutar} onChange={(e) => setTutar(Number(e.target.value))} />
-            </div>
-            <div>
-              <label className="text-sm text-[color:var(--muted)]">Tarih</label>
-              <input className="input mt-1" type="date" value={tarih} onChange={(e) => setTarih(e.target.value)} />
-            </div>
-            <div className="md:col-span-2">
-              <label className="text-sm text-[color:var(--muted)]">Açıklama</label>
-              <input className="input mt-1" value={aciklama} onChange={(e) => setAciklama(e.target.value)} />
+            <div className="flex flex-wrap gap-2">
+              <button className="btn-primary" type="button" onClick={() => setLedgerOpen("gelir")}>
+                + Gelir Ekle
+              </button>
+              <button className="btn-primary" type="button" onClick={() => setLedgerOpen("gider")}>
+                + Gider Ekle
+              </button>
             </div>
           </div>
-          <button className="btn-primary" type="submit">
-            Kaydet
-          </button>
-        </form>
+          <div className="mt-4 text-xs text-[color:var(--muted)]">
+            İstersen öğrenci filtresi seçiliyse, modal içinde otomatik öğrenci seçili gelir.
+          </div>
+        </div>
 
-        <form className="card card-neon p-6 space-y-3" onSubmit={odemeEkle}>
-          <div className="font-semibold">Öğrenci Ödeme Takibi</div>
-          <div className="grid md:grid-cols-2 gap-3">
+        <div className="card card-neon p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <label className="text-sm text-[color:var(--muted)]">Öğrenci</label>
-              <select className="input mt-1" value={ogrenciId} onChange={(e) => setOgrenciId(e.target.value)}>
-                {students.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.ad_soyad}
-                  </option>
-                ))}
-              </select>
+              <div className="font-semibold">Öğrenci Ödemeleri (Aidat / Kamp / vb.)</div>
+              <div className="text-sm text-[color:var(--muted)] mt-1">Ödeme kalemi ekleme de modal.</div>
             </div>
-            <div>
-              <label className="text-sm text-[color:var(--muted)]">Dönem</label>
-              <input className="input mt-1" value={donem} onChange={(e) => setDonem(e.target.value)} />
-            </div>
-            <div className="md:col-span-2">
-              <label className="text-sm text-[color:var(--muted)]">Gelir kategorisi</label>
-              <input className="input mt-1" value={gelirKategorisi} onChange={(e) => setGelirKategorisi(e.target.value)} />
-            </div>
-            <div>
-              <label className="text-sm text-[color:var(--muted)]">Toplam tutar</label>
-              <input className="input mt-1" type="number" value={tutarToplam} onChange={(e) => setTutarToplam(Number(e.target.value))} />
-            </div>
-            <div>
-              <label className="text-sm text-[color:var(--muted)]">Ödenen</label>
-              <input className="input mt-1" type="number" value={tutarOdenen} onChange={(e) => setTutarOdenen(Number(e.target.value))} />
-            </div>
-            <div className="md:col-span-2">
-              <label className="text-sm text-[color:var(--muted)]">Son ödeme tarihi</label>
-              <input className="input mt-1" type="date" value={sonOdeme} onChange={(e) => setSonOdeme(e.target.value)} />
+            <div className="flex flex-wrap gap-2">
+              <button className="btn-primary" type="button" onClick={() => setSpOpen(true)}>
+                + Ödeme Kalemi Ekle
+              </button>
+              <a className="btn-ghost" href="/finans/aidat">
+                Aidat Takibi
+              </a>
             </div>
           </div>
-          <button className="btn-primary" type="submit">
-            Kaydet
-          </button>
-        </form>
+        </div>
       </div>
 
       {bilgi && <div className="text-sm text-[color:var(--success)]">{bilgi}</div>}
@@ -609,10 +530,10 @@ export function FinanceClient({
                 <div className="text-sm text-[color:var(--muted)] mt-1">
                   Durum: {p.durum} • Ödenen: {Number(p.tutar_odenen).toLocaleString("tr-TR")} ₺ • Son tarih: {p.son_odeme_tarihi}
                 </div>
-                <div className="mt-2 flex items-center gap-2">
-                  <span className="text-sm text-[color:var(--muted)]">Tahsilat güncelle:</span>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <span className="text-sm text-[color:var(--muted)]">Tahsilat:</span>
                   <input
-                    className="input w-32"
+                    className="input w-28 sm:w-32"
                     type="number"
                     defaultValue={Number(p.tutar_odenen)}
                     onBlur={(e) =>

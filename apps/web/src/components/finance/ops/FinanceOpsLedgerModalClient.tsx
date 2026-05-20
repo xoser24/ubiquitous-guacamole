@@ -6,17 +6,22 @@ import { useEffect, useMemo, useState } from "react";
 export function FinanceOpsLedgerModalClient({
   open,
   onClose,
-  initialTur
+  initialTur,
+  students,
+  defaultStudentId
 }: {
   open: boolean;
   onClose: () => void;
   initialTur: "gelir" | "gider";
+  students?: { id: string; ad_soyad: string }[];
+  defaultStudentId?: string | null;
 }) {
   const [tur, setTur] = useState<"gelir" | "gider">(initialTur);
   const [kategori, setKategori] = useState("");
   const [tutar, setTutar] = useState<number>(0);
   const [tarih, setTarih] = useState(dayjs().format("YYYY-MM-DD"));
   const [aciklama, setAciklama] = useState("");
+  const [studentId, setStudentId] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [hata, setHata] = useState<string | null>(null);
   const [bilgi, setBilgi] = useState<string | null>(null);
@@ -24,10 +29,11 @@ export function FinanceOpsLedgerModalClient({
   useEffect(() => {
     if (open) {
       setTur(initialTur);
+      setStudentId(defaultStudentId ?? "");
       setHata(null);
       setBilgi(null);
     }
-  }, [open, initialTur]);
+  }, [open, initialTur, defaultStudentId]);
 
   const title = useMemo(() => (tur === "gelir" ? "💰 Gelir Ekle" : "💸 Gider Ekle"), [tur]);
 
@@ -44,7 +50,8 @@ export function FinanceOpsLedgerModalClient({
           kategori: kategori || (tur === "gelir" ? "Diğer Gelir" : "Diğer Gider"),
           tutar: Number(tutar),
           tarih,
-          aciklama: aciklama || null
+          aciklama: aciklama || null,
+          student_id: studentId || null
         })
       });
       const j = await r.json().catch(() => ({}));
@@ -62,9 +69,9 @@ export function FinanceOpsLedgerModalClient({
 
   return (
     <div className="fixed inset-0 z-[60]">
-      <div className="absolute inset-0 bg-black/70" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/75 backdrop-blur-md" onClick={onClose} />
       <div className="absolute inset-0 p-4 md:p-8 overflow-auto">
-        <div className="max-w-xl mx-auto card card-neon p-5 md:p-6">
+        <div className="max-w-xl mx-auto card card-neon p-5 md:p-6 bg-[color:var(--panel)]/95">
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="text-xs text-[color:var(--muted)]">Finans Operasyon Merkezi</div>
@@ -80,6 +87,19 @@ export function FinanceOpsLedgerModalClient({
           {bilgi && <div className="mt-4 text-sm text-[color:var(--success)]">{bilgi}</div>}
 
           <div className="mt-4 grid gap-3">
+            {Array.isArray(students) && students.length > 0 && (
+              <div>
+                <label className="text-xs text-[color:var(--muted)]">Öğrenci (opsiyonel)</label>
+                <select className="input mt-1" value={studentId} onChange={(e) => setStudentId(e.target.value)}>
+                  <option value="">Genel (öğrenci yok)</option>
+                  {students.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.ad_soyad}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs text-[color:var(--muted)]">Tür</label>

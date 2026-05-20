@@ -65,9 +65,9 @@ export function FinanceOpsReceiptModalClient({
 
   return (
     <div className="fixed inset-0 z-[70]">
-      <div className="absolute inset-0 bg-black/70" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/75 backdrop-blur-md" onClick={onClose} />
       <div className="absolute inset-0 p-4 md:p-8 overflow-auto">
-        <div className="max-w-3xl mx-auto card card-neon p-5 md:p-6">
+        <div className="max-w-3xl mx-auto card card-neon p-5 md:p-6 bg-[color:var(--panel)]/95">
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="text-xs text-[color:var(--muted)]">Finans Operasyon Merkezi</div>
@@ -123,4 +123,3 @@ export function FinanceOpsReceiptModalClient({
     </div>
   );
 }
-
