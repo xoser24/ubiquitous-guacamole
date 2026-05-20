@@ -108,7 +108,7 @@ export function FinanceOpsSummaryClient({
           animate={reduce ? undefined : { opacity: 1, y: 0 }}
           transition={{ duration: 0.25, ease: "easeOut" }}
         >
-          <div aria-hidden className="absolute -right-20 -top-20 h-56 w-56 rounded-full neon-dot opacity-60" />
+          <div aria-hidden className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full neon-dot opacity-60" />
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="text-xs text-[color:var(--muted)]">💰 GELİRLER</div>
@@ -142,7 +142,7 @@ export function FinanceOpsSummaryClient({
           animate={reduce ? undefined : { opacity: 1, y: 0 }}
           transition={{ duration: 0.25, delay: 0.03, ease: "easeOut" }}
         >
-          <div aria-hidden className="absolute -left-20 -bottom-20 h-56 w-56 rounded-full neon-dot opacity-55" />
+          <div aria-hidden className="pointer-events-none absolute -left-20 -bottom-20 h-56 w-56 rounded-full neon-dot opacity-55" />
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="text-xs text-[color:var(--muted)]">💸 GİDERLER</div>

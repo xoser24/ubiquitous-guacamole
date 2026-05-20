@@ -135,8 +135,8 @@ export function FinanceOpsCenterClient({
     <div className="space-y-6 pb-24">
       {/* Header */}
       <div className="card card-neon p-6 overflow-hidden relative">
-        <div aria-hidden className="absolute -right-24 -top-24 h-72 w-72 rounded-full neon-dot opacity-80" />
-        <div aria-hidden className="absolute -left-24 -bottom-24 h-72 w-72 rounded-full neon-dot opacity-60" />
+        <div aria-hidden className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full neon-dot opacity-80" />
+        <div aria-hidden className="pointer-events-none absolute -left-24 -bottom-24 h-72 w-72 rounded-full neon-dot opacity-60" />
 
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
