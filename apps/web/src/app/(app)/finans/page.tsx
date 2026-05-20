@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { girisZorunlu } from "@/lib/auth";
-import Link from "next/link";
 import dayjs from "dayjs";
 import { supabaseServer } from "@/lib/supabase/server";
+import { FinanceOpsCenterClient } from "@/components/finance/ops/FinanceOpsCenterClient";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -18,83 +18,137 @@ export default async function FinansPage() {
   const ayBit = dayjs().add(1, "month").startOf("month").format("YYYY-MM-DD");
   const today = dayjs().format("YYYY-MM-DD");
   const next7 = dayjs().add(7, "day").format("YYYY-MM-DD");
+  const prevAyBas = dayjs().subtract(1, "month").startOf("month").format("YYYY-MM-DD");
+  const prevAyBit = dayjs().startOf("month").format("YYYY-MM-DD");
+  const twoMonthsAgo = dayjs().subtract(2, "month").startOf("month").format("YYYY-MM-DD");
 
-  const [{ data: tx }, { data: overdue }, { data: upcoming }, { data: pendingSubs }] = await Promise.all([
-    // Admin panel ile aynı mantık: sadece bu ayı çek ve iptal edilenleri hariç tut
+  // Dashboard data (backend değişmeden, sadece görünürlük/operasyon odaklı)
+  const [
+    { data: students },
+    { data: txAy },
+    { data: txPrev },
+    { data: txRecent },
+    { data: aidatThisMonth },
+    { data: overdueSp },
+    { data: upcomingSp },
+    { data: pendingSubs }
+  ] = await Promise.all([
+    sb
+      .from("students")
+      .select("id, ad_soyad, yas_grubu, veli_telefon, parent_id, aidat_vade_gunu, aylik_aidat_tutar")
+      .order("ad_soyad", { ascending: true })
+      .limit(2500),
     sb
       .from("financial_transactions")
-      .select("tur, tutar, tarih, kategori")
+      .select("id, tur, kategori, tutar, tarih, aciklama, student_id, created_at")
       .eq("iptal", false)
       .gte("tarih", ayBas)
       .lt("tarih", ayBit)
       .order("tarih", { ascending: false })
       .limit(5000),
     sb
-      .from("student_payments")
-      .select("id")
-      .lt("son_odeme_tarihi", today)
-      .neq("durum", "ödendi"),
+      .from("financial_transactions")
+      .select("tur, tutar, tarih")
+      .eq("iptal", false)
+      .gte("tarih", prevAyBas)
+      .lt("tarih", prevAyBit)
+      .order("tarih", { ascending: false })
+      .limit(5000),
+    sb
+      .from("financial_transactions")
+      .select("id, tur, kategori, tutar, tarih, aciklama, student_id, created_at")
+      .eq("iptal", false)
+      .order("tarih", { ascending: false })
+      .limit(80),
     sb
       .from("student_payments")
-      .select("id")
+      .select("id, student_id, donem, gelir_kategorisi, tutar_toplam, tutar_odenen, son_odeme_tarihi, durum, updated_at, iptal")
+      .eq("iptal", false)
+      .eq("donem", ay)
+      .eq("gelir_kategorisi", "Aylık Aidat")
+      .limit(2500),
+    sb
+      .from("student_payments")
+      .select("id, student_id, donem, gelir_kategorisi, tutar_toplam, tutar_odenen, son_odeme_tarihi, durum, updated_at")
+      .eq("iptal", false)
+      .lt("son_odeme_tarihi", today)
+      .neq("durum", "ödendi")
+      .order("son_odeme_tarihi", { ascending: true })
+      .limit(2500),
+    sb
+      .from("student_payments")
+      .select("id, student_id, donem, gelir_kategorisi, tutar_toplam, tutar_odenen, son_odeme_tarihi, durum, updated_at")
+      .eq("iptal", false)
       .gte("son_odeme_tarihi", today)
       .lte("son_odeme_tarihi", next7)
-      .neq("durum", "ödendi"),
-    sb.from("payment_submissions").select("id").eq("status", "pending")
+      .neq("durum", "ödendi")
+      .order("son_odeme_tarihi", { ascending: true })
+      .limit(2500),
+    sb
+      .from("payment_submissions")
+      .select("id, amount, paid_at, status, student_payment_id, student_payments(donem, gelir_kategorisi, student_id, students(ad_soyad))")
+      .eq("status", "pending")
+      .order("created_at", { ascending: false })
+      .limit(200)
   ]);
 
-  let gelir = 0;
-  let gider = 0;
-  (tx ?? []).forEach((t: any) => {
-    if (t.tur === "gelir") gelir += Number(t.tutar);
-    else gider += Number(t.tutar);
-  });
-  const net = gelir - gider;
+  const txAyList = (txAy ?? []) as any[];
+  const txPrevList = (txPrev ?? []) as any[];
 
-  const cards = [
-    { href: "/finans/aidat", title: "📋 Aidat Takibi", desc: "Öğrenci bazlı takip + gün hesabı" },
-    { href: "/finans/defter", title: "💰 Gelir / Gider", desc: "Defter kayıtları + öğrenci bazlı filtre" },
-    { href: "/finans/gecikmis", title: "🔴 Gecikmiş Ödemeler", desc: "Şiddet seviyeli gecikme listesi + hızlı aksiyon" },
-    { href: "/finans/yaklasan", title: "📅 Yaklaşan Ödemeler", desc: "Önümüzdeki günler için proaktif takip" },
-    { href: "/finans/hatirlatmalar", title: "📲 Tahsilat Hatırlatmaları", desc: "WhatsApp akışları, toplu gönderim, geçmiş" },
-    { href: "/finans/raporlar", title: "📈 Finansal Raporlar", desc: "Tahsilat oranı, trendler, dışa aktarım" },
-    { href: "/finans/risk", title: "👨‍👩‍👦 Veli Risk Analizi", desc: "Düzenli/Riskli/Kritik sınıflandırma" },
-    { href: "/finans/takim-analiz", title: "⚽ Takım / Yaş Grubu Analizi", desc: "U10/U12 vb gelir ve gecikme oranları" }
-  ];
+  const sumTx = (list: any[]) => {
+    let gelir = 0;
+    let gider = 0;
+    list.forEach((t) => (t.tur === "gelir" ? (gelir += Number(t.tutar)) : (gider += Number(t.tutar))));
+    return { gelir, gider, net: gelir - gider };
+  };
+  const ayTotals = sumTx(txAyList);
+  const prevTotals = sumTx(txPrevList);
+
+  const overdueList = (overdueSp ?? []) as any[];
+  const overdueAmount = overdueList.reduce((acc, p) => acc + Math.max(0, Number(p.tutar_toplam) - Number(p.tutar_odenen ?? 0)), 0);
+
+  const aidatList = (aidatThisMonth ?? []) as any[];
+  const aidatTotal = aidatList.reduce((acc, p) => acc + Number(p.tutar_toplam ?? 0), 0);
+  const aidatPaid = aidatList.reduce((acc, p) => acc + Number(p.tutar_odenen ?? 0), 0);
+  const tahsilatOrani = aidatTotal > 0 ? Math.round((aidatPaid / aidatTotal) * 100) : 0;
+
+  // Riskli veli: son 2 ay içinde gecikmesi olan benzersiz parent_id
+  const { data: riskRaw } = await sb
+    .from("student_payments")
+    .select("student_id, son_odeme_tarihi, durum, students(parent_id)")
+    .eq("iptal", false)
+    .gte("son_odeme_tarihi", twoMonthsAgo)
+    .lt("son_odeme_tarihi", today)
+    .neq("durum", "ödendi")
+    .limit(4000);
+  const riskParents = new Set<string>();
+  (riskRaw ?? []).forEach((r: any) => {
+    const pid = r?.students?.parent_id;
+    if (pid) riskParents.add(pid);
+  });
 
   return (
-    <div className="space-y-6">
-      <div className="card card-neon p-6 overflow-hidden relative">
-        <div aria-hidden className="absolute -right-24 -top-24 h-64 w-64 rounded-full neon-dot opacity-80" />
-        <div aria-hidden className="absolute -left-24 -bottom-24 h-64 w-64 rounded-full neon-dot opacity-60" />
-
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <div className="text-xs text-[color:var(--muted)]">⚽ Tahsilat Operasyon Merkezi</div>
-            <h1 className="text-2xl md:text-3xl font-semibold mt-1">Finans</h1>
-            <div className="text-sm text-[color:var(--muted)] mt-2">
-              Bu ay: Gelir {gelir.toLocaleString("tr-TR")} ₺ • Gider {gider.toLocaleString("tr-TR")} ₺ • Net {net.toLocaleString("tr-TR")} ₺
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <span className="chip">🔴 Gecikmiş: {overdue?.length ?? 0}</span>
-            <span className="chip">📅 7 gün içinde: {upcoming?.length ?? 0}</span>
-            <span className="chip">🧾 Bekleyen dekont: {pendingSubs?.length ?? 0}</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-        {cards.map((c) => (
-          <Link key={c.href} href={c.href} className="block">
-            <div className="card card-neon card-neon-hover p-4 h-full">
-              <div className="text-base font-semibold leading-snug">{c.title}</div>
-              <div className="text-xs text-[color:var(--muted)] mt-1 leading-relaxed">{c.desc}</div>
-            </div>
-          </Link>
-        ))}
-      </div>
-    </div>
+    <FinanceOpsCenterClient
+      monthKey={ay}
+      today={today}
+      students={(students ?? []) as any}
+      aidatThisMonth={(aidatThisMonth ?? []) as any}
+      overduePayments={(overdueSp ?? []) as any}
+      upcomingPayments={(upcomingSp ?? []) as any}
+      pendingSubmissions={(pendingSubs ?? []) as any}
+      txThisMonth={txAyList}
+      txRecent={(txRecent ?? []) as any}
+      kpis={{
+        gelir: ayTotals.gelir,
+        gider: ayTotals.gider,
+        net: ayTotals.net,
+        gecikmisAlacak: overdueAmount,
+        tahsilatOrani,
+        riskliVeliler: riskParents.size,
+        prevGelir: prevTotals.gelir,
+        prevGider: prevTotals.gider,
+        prevNet: prevTotals.net
+      }}
+    />
   );
 }
