@@ -17,11 +17,13 @@ export async function duzenleDefterKaydi(row: any) {
   const tutar = Number(prompt("Tutar:", String(row.tutar)) ?? row.tutar);
   const tarih = prompt("Tarih (YYYY-MM-DD):", row.tarih) ?? row.tarih;
   const aciklama = prompt("Açıklama (opsiyonel):", row.aciklama ?? "") ?? row.aciklama;
+  const student_id_raw = prompt("Öğrenci ID (boş bırak = genel):", row.student_id ?? "") ?? (row.student_id ?? "");
+  const student_id = student_id_raw.trim() ? student_id_raw.trim() : null;
 
   const r = await fetch("/api/finance/ledger/update", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ id: row.id, tur, kategori, tutar, tarih, aciklama: aciklama || null })
+    body: JSON.stringify({ id: row.id, tur, kategori, tutar, tarih, aciklama: aciklama || null, student_id })
   });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(j?.hata ?? "Güncellenemedi.");
@@ -53,4 +55,3 @@ export async function duzenleBorcKaydi(row: any) {
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(j?.hata ?? "Güncellenemedi.");
 }
-

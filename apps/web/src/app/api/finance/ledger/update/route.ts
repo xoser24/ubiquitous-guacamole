@@ -16,23 +16,32 @@ export async function POST(req: Request) {
       kategori: z.string().min(2).max(80),
       tutar: z.number().positive(),
       tarih: z.string().min(8),
-      aciklama: z.string().max(300).optional().nullable()
+      aciklama: z.string().max(300).optional().nullable(),
+      student_id: z.string().uuid().optional().nullable()
     });
     const body = await parseJson(req, schema);
 
     const admin = supabaseAdmin();
-    const { error } = await admin
+    const patch: any = {
+      tur: body.tur,
+      kategori: body.kategori,
+      tutar: body.tutar,
+      tarih: body.tarih,
+      aciklama: body.aciklama ?? null,
+      student_id: body.student_id ?? null,
+      created_by: user.id
+    };
+
+    let { error } = await admin
       .from("financial_transactions")
-      .update({
-        tur: body.tur,
-        kategori: body.kategori,
-        tutar: body.tutar,
-        tarih: body.tarih,
-        aciklama: body.aciklama ?? null,
-        created_by: user.id
-      })
+      .update(patch)
       .eq("id", body.id)
       .eq("iptal", false);
+    // Eski DB şemasında student_id yoksa, student_id olmadan tekrar dene.
+    if (error && /student_id/i.test(error.message ?? "")) {
+      const { student_id, ...fallback } = patch;
+      ({ error } = await admin.from("financial_transactions").update(fallback).eq("id", body.id).eq("iptal", false));
+    }
     if (error) return NextResponse.json({ hata: error.message ?? "Güncellenemedi." }, { status: 400 });
 
     return NextResponse.json({ ok: true }, { status: 200 });
@@ -40,4 +49,3 @@ export async function POST(req: Request) {
     return jsonError(e);
   }
 }
-

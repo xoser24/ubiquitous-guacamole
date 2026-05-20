@@ -37,37 +37,55 @@ export function FinanceClient({
 }) {
   const reduceMotion = useReducedMotion();
   const [donem, setDonem] = useState(dayjs().format("YYYY-MM"));
+
+  // Karma model:
+  // - Üstte öğrenci filtresi (seçiliyse listeler/özetler o öğrenciye göre)
+  // - Yeni işlem eklerken ayrıca öğrenci seçimi (opsiyonel: genel işlem için boş bırakılabilir)
+  const [filterStudentId, setFilterStudentId] = useState<string>("");
   const [txTur, setTxTur] = useState<"gelir" | "gider">("gelir");
   const [kategori, setKategori] = useState("Aylık Aidat");
   const [tutar, setTutar] = useState<number>(0);
   const [tarih, setTarih] = useState(dayjs().format("YYYY-MM-DD"));
   const [aciklama, setAciklama] = useState("");
 
+  const [txStudentId, setTxStudentId] = useState<string>("");
   const [ogrenciId, setOgrenciId] = useState(students[0]?.id ?? "");
   const [gelirKategorisi, setGelirKategorisi] = useState("Aylık Aidat");
   const [tutarToplam, setTutarToplam] = useState<number>(0);
   const [tutarOdenen, setTutarOdenen] = useState<number>(0);
   const [sonOdeme, setSonOdeme] = useState(dayjs().format("YYYY-MM-DD"));
 
+
   const [transactions, setTransactions] = useState<any[]>(initialTransactions ?? []);
   const [payments, setPayments] = useState<any[]>(initialStudentPayments ?? []);
   const [bilgi, setBilgi] = useState<string | null>(null);
   const [hata, setHata] = useState<string | null>(null);
 
+  const studentNameMap = useMemo(() => {
+    const m = new Map<string, string>();
+    (students ?? []).forEach((s) => m.set(s.id, s.ad_soyad));
+    return m;
+  }, [students]);
+
+  const filteredTransactions = useMemo(() => {
+    if (!filterStudentId) return transactions;
+    return transactions.filter((t) => t.student_id === filterStudentId);
+  }, [transactions, filterStudentId]);
+
   const ozet = useMemo(() => {
     const inMonth = (d: string) => dayjs(d).format("YYYY-MM") === donem;
     let gelir = 0;
     let gider = 0;
-    transactions.filter((t) => inMonth(t.tarih)).forEach((t) => {
+    filteredTransactions.filter((t) => inMonth(t.tarih)).forEach((t) => {
       if (t.tur === "gelir") gelir += Number(t.tutar);
       else gider += Number(t.tutar);
     });
     return { gelir, gider, net: gelir - gider };
-  }, [transactions, donem]);
+  }, [filteredTransactions, donem]);
 
   const monthlyLine = useMemo(() => {
     const map = new Map<string, { gelir: number; gider: number }>();
-    transactions.forEach((t) => {
+    filteredTransactions.forEach((t) => {
       const key = dayjs(t.tarih).format("YYYY-MM");
       const cur = map.get(key) ?? { gelir: 0, gider: 0 };
       if (t.tur === "gelir") cur.gelir += Number(t.tutar);
@@ -82,11 +100,11 @@ export function FinanceClient({
         { label: "Gider", data: keys.map((k) => map.get(k)!.gider), borderColor: "#EF4444" }
       ]
     };
-  }, [transactions]);
+  }, [filteredTransactions]);
 
   const expenseBreakdown = useMemo(() => {
     const m = new Map<string, number>();
-    transactions
+    filteredTransactions
       .filter((t) => dayjs(t.tarih).format("YYYY-MM") === donem && t.tur === "gider")
       .forEach((t) => m.set(t.kategori, (m.get(t.kategori) ?? 0) + Number(t.tutar)));
     const labels = Array.from(m.keys());
@@ -96,7 +114,7 @@ export function FinanceClient({
         { label: "Gider", data: labels.map((l) => m.get(l)!), backgroundColor: "rgba(239,68,68,.35)" }
       ]
     };
-  }, [transactions, donem]);
+  }, [filteredTransactions, donem]);
 
   function durumHesapla(toplam: number, odenen: number, son: string) {
     if (odenen >= toplam) return "ödendi";
@@ -119,7 +137,14 @@ export function FinanceClient({
       const r = await fetch("/api/finance/ledger/create", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ tur: txTur, kategori, tutar, tarih, aciklama: aciklama || null })
+        body: JSON.stringify({
+          tur: txTur,
+          kategori,
+          tutar,
+          tarih,
+          aciklama: aciklama || null,
+          student_id: txStudentId || null
+        })
       });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(j?.hata ?? "Kayıt eklenemedi.");
@@ -190,6 +215,25 @@ export function FinanceClient({
           <div className="text-sm text-[color:var(--muted)]">Dönem</div>
           <input className="input mt-1" value={donem} onChange={(e) => setDonem(e.target.value)} />
         </motion.div>
+
+        <motion.div
+          className="card card-neon p-4"
+          initial={reduceMotion ? undefined : { opacity: 0, y: 8 }}
+          animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+          transition={{ duration: 0.25, delay: 0.03, ease: "easeOut" }}
+        >
+          <div className="text-sm text-[color:var(--muted)]">Öğrenci Filtresi</div>
+          <select className="input mt-1" value={filterStudentId} onChange={(e) => setFilterStudentId(e.target.value)}>
+            <option value="">Tümü</option>
+            {students.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.ad_soyad}
+              </option>
+            ))}
+          </select>
+          <div className="text-xs text-[color:var(--muted)] mt-1">Özet/grafikler/defter listesi bu filtreye göre güncellenir.</div>
+        </motion.div>
+
         <motion.div
           className="card card-neon p-4"
           initial={reduceMotion ? undefined : { opacity: 0, y: 8 }}
@@ -261,6 +305,21 @@ export function FinanceClient({
         <form className="card card-neon p-6 space-y-3" onSubmit={txEkle}>
           <div className="font-semibold">Defter Kaydı (Gelir/Gider)</div>
           <div className="grid md:grid-cols-2 gap-3">
+            <div className="md:col-span-2">
+              <label className="text-sm text-[color:var(--muted)]">İşlem Öğrencisi (opsiyonel)</label>
+              <select
+                className="input mt-1"
+                value={txStudentId}
+                onChange={(e) => setTxStudentId(e.target.value)}
+              >
+                <option value="">Genel (öğrenci yok)</option>
+                {students.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.ad_soyad}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div>
               <label className="text-sm text-[color:var(--muted)]">Tür</label>
               <select className="input mt-1" value={txTur} onChange={(e) => setTxTur(e.target.value as any)}>
@@ -335,11 +394,11 @@ export function FinanceClient({
 
       <div className="card card-neon p-6">
         <div className="font-semibold mb-3">Defter Kayıtları (Son 50)</div>
-        {transactions.length === 0 ? (
+        {filteredTransactions.length === 0 ? (
           <div className="text-[color:var(--muted)]">Kayıt yok.</div>
         ) : (
           <div className="space-y-2">
-            {transactions.slice(0, 50).map((t) => (
+            {filteredTransactions.slice(0, 50).map((t) => (
               <div key={t.id} className="rounded-xl border border-white/10 bg-white/5 p-3">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -347,7 +406,9 @@ export function FinanceClient({
                       {t.tur} • {t.kategori} • {Number(t.tutar).toLocaleString("tr-TR")} ₺
                     </div>
                     <div className="text-sm text-[color:var(--muted)] mt-1">
-                      {t.tarih} {t.aciklama ? `• ${t.aciklama}` : ""}
+                      {t.tarih}
+                      {t.student_id ? ` • Öğrenci: ${studentNameMap.get(t.student_id) ?? t.student_id}` : ""}
+                      {t.aciklama ? ` • ${t.aciklama}` : ""}
                     </div>
                   </div>
                   <div className="flex gap-2">

@@ -33,6 +33,7 @@ export function AttendanceClient({
   const [bilgi, setBilgi] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [q, setQ] = useState<string>("");
+  const [noteOpen, setNoteOpen] = useState<Record<string, boolean>>({});
 
   const summary = students.reduce(
     (acc, s) => {
@@ -95,6 +96,12 @@ export function AttendanceClient({
     return hay.includes(q.toLowerCase());
   });
 
+  function durumBadge(durum: "geldi" | "gelmedi" | "izinli") {
+    if (durum === "geldi") return "border-emerald-400/25 bg-emerald-400/10";
+    if (durum === "izinli") return "border-amber-400/25 bg-amber-400/10";
+    return "border-red-500/25 bg-red-500/10";
+  }
+
   return (
     <div className="card card-neon p-6">
       <div className="flex flex-wrap items-end justify-between gap-3 mb-3">
@@ -133,9 +140,22 @@ export function AttendanceClient({
             transition={{ duration: 0.2, delay: Math.min(0.15, idx * 0.01), ease: "easeOut" }}
           >
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="min-w-0">
-                <div className="font-semibold truncate">{s.ad_soyad}</div>
-                <div className="text-xs text-[color:var(--muted)]">{s.yas_grubu}</div>
+              <div className="min-w-0 flex items-center gap-3">
+                <div
+                  className="h-9 w-9 rounded-full border border-white/10 bg-black/20 flex items-center justify-center text-xs font-semibold"
+                  aria-hidden
+                >
+                  {(s.ad_soyad ?? "?")
+                    .split(" ")
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .map((x) => x[0]?.toUpperCase())
+                    .join("")}
+                </div>
+                <div className="min-w-0">
+                  <div className="font-semibold truncate">{s.ad_soyad}</div>
+                  <div className="text-xs text-[color:var(--muted)]">{s.yas_grubu}</div>
+                </div>
               </div>
 
               <div className="flex items-center gap-2">
@@ -168,27 +188,48 @@ export function AttendanceClient({
                     {savingId === s.id && <span className="text-xs text-[color:var(--muted)]">Kaydediliyor…</span>}
                   </>
                 ) : (
-                  <span className="chip">{map[s.id]?.durum ?? "gelmedi"}</span>
+                  <span className={`inline-flex items-center rounded-full border px-2 py-0.5 ${durumBadge(map[s.id]?.durum ?? "gelmedi")}`}>
+                    {map[s.id]?.durum ?? "gelmedi"}
+                  </span>
                 )}
               </div>
             </div>
 
             <div className="mt-3">
-              <div className="text-xs text-[color:var(--muted)] mb-1">Not (kayıtlı):</div>
-              {canEdit ? (
-                <div className="flex gap-2">
-                  <input
-                    className="input flex-1"
-                    value={map[s.id]?.notu ?? ""}
-                    placeholder="Örn: 10 dk geç geldi, hafif ağrı…"
-                    onChange={(e) => setMap((m) => ({ ...m, [s.id]: { ...(m[s.id] ?? { durum: "gelmedi" }), notu: e.target.value } }))}
-                  />
-                  <button type="button" className="btn-ghost" onClick={() => kaydet(s.id, { notu: map[s.id]?.notu ?? "" })} disabled={savingId === s.id}>
-                    Kaydet
-                  </button>
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={() => setNoteOpen((m) => ({ ...m, [s.id]: !m[s.id] }))}
+              >
+                {noteOpen[s.id] ? "Notu Gizle" : "Not Ekle / Gör"}
+              </button>
+
+              {noteOpen[s.id] && (
+                <div className="mt-2">
+                  <div className="text-xs text-[color:var(--muted)] mb-1">Not:</div>
+                  {canEdit ? (
+                    <div className="flex gap-2">
+                      <input
+                        className="input flex-1"
+                        value={map[s.id]?.notu ?? ""}
+                        placeholder="Örn: 10 dk geç geldi, hafif ağrı…"
+                        onChange={(e) =>
+                          setMap((m) => ({ ...m, [s.id]: { ...(m[s.id] ?? { durum: "gelmedi" }), notu: e.target.value } }))
+                        }
+                      />
+                      <button
+                        type="button"
+                        className="btn-primary"
+                        onClick={() => kaydet(s.id, { notu: map[s.id]?.notu ?? "" })}
+                        disabled={savingId === s.id}
+                      >
+                        Kaydet
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="text-sm">{map[s.id]?.notu ? map[s.id]?.notu : <span className="text-[color:var(--muted)]">—</span>}</div>
+                  )}
                 </div>
-              ) : (
-                <div className="text-sm">{map[s.id]?.notu ? map[s.id]?.notu : <span className="text-[color:var(--muted)]">—</span>}</div>
               )}
             </div>
 
